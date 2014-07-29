@@ -22,12 +22,13 @@ public class ContentLoadingProgressDialog extends ProgressDialog {
 
     private boolean mDismissed = false;
 
+    private boolean mIsAttached = false;
+
     private int minShowTime = 500; // ms
 
     private int minDelay = 500; // ms
 
     private Handler mHandler;
-
 
     private final Runnable mDelayedHide = new Runnable() {
 
@@ -35,7 +36,8 @@ public class ContentLoadingProgressDialog extends ProgressDialog {
         public void run() {
             mPostedHide = false;
             mStartTime = -1;
-            ContentLoadingProgressDialog.super.dismiss();
+            if (mIsAttached)
+                ContentLoadingProgressDialog.super.dismiss();
         }
     };
 
@@ -162,21 +164,16 @@ public class ContentLoadingProgressDialog extends ProgressDialog {
 
     @Override
     public void onAttachedToWindow() {
+        mIsAttached = true;
         super.onAttachedToWindow();
-        removeCallbacks();
     }
 
     @Override
     public void onDetachedFromWindow() {
+        mIsAttached = false;
         super.onDetachedFromWindow();
-        removeCallbacks();
-    }
-
-    private void removeCallbacks() {
-        if(mHandler != null) {
-            mHandler.removeCallbacks(mDelayedHide);
-            mHandler.removeCallbacks(mDelayedShow);
-        }
+        mHandler.removeCallbacks(mDelayedShow);
+        mHandler.removeCallbacks(mDelayedHide);
     }
 
     /**
@@ -193,7 +190,8 @@ public class ContentLoadingProgressDialog extends ProgressDialog {
             // The progress spinner has been shown long enough
             // OR was not shown yet. If it wasn't shown yet,
             // it will just never be shown.
-            super.dismiss();
+            if (mIsAttached)
+                super.dismiss();
         } else {
             // The progress spinner is shown, but not long enough,
             // so put a delayed message in to hide it when its been
